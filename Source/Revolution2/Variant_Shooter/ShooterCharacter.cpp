@@ -150,8 +150,13 @@ void AShooterCharacter::PlayFiringMontage(UAnimMontage* Montage)
 
 void AShooterCharacter::AddWeaponRecoil(float Recoil)
 {
-	// apply the recoil as pitch input
-	AddControllerPitchInput(Recoil);
+	// Only apply recoil in first person mode
+	if (GetCurrentViewMode() == EViewMode::FirstPerson)
+	{
+		// apply the recoil as pitch input
+		AddControllerPitchInput(Recoil);
+	}
+	// In top down mode, recoil is not needed or can be handled differently
 }
 
 void AShooterCharacter::UpdateWeaponHUD(int32 CurrentAmmo, int32 MagazineSize)
@@ -161,19 +166,55 @@ void AShooterCharacter::UpdateWeaponHUD(int32 CurrentAmmo, int32 MagazineSize)
 
 FVector AShooterCharacter::GetWeaponTargetLocation()
 {
-	// trace ahead from the camera viewpoint
-	FHitResult OutHit;
+	// Check current view mode
+	if (GetCurrentViewMode() == EViewMode::TopDown)
+	{
+		// Top down mode: use mouse position to determine target
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			float MouseX, MouseY;
+			if (PC->GetMousePosition(MouseX, MouseY))
+			{
+				// Deproject screen position to world
+				FVector WorldLocation, WorldDirection;
+				if (PC->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection))
+				{
+					// Perform line trace to find target
+					FHitResult OutHit;
+					FVector Start = WorldLocation;
+					FVector End = Start + (WorldDirection * MaxAimDistance);
 
-	const FVector Start = GetFirstPersonCameraComponent()->GetComponentLocation();
-	const FVector End = Start + (GetFirstPersonCameraComponent()->GetForwardVector() * MaxAimDistance);
+					FCollisionQueryParams QueryParams;
+					QueryParams.AddIgnoredActor(this);
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
+					GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, QueryParams);
 
-	GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, QueryParams);
+					// Return either the impact point or the trace end
+					return OutHit.bBlockingHit ? OutHit.ImpactPoint : OutHit.TraceEnd;
+				}
+			}
+		}
+		
+		// Fallback: return position in front of character
+		return GetActorLocation() + (GetActorForwardVector() * MaxAimDistance);
+	}
+	else
+	{
+		// First person mode: trace ahead from the camera viewpoint
+		FHitResult OutHit;
 
-	// return either the impact point or the trace end
-	return OutHit.bBlockingHit ? OutHit.ImpactPoint : OutHit.TraceEnd;
+		const FVector Start = GetFirstPersonCameraComponent()->GetComponentLocation();
+		const FVector End = Start + (GetFirstPersonCameraComponent()->GetForwardVector() * MaxAimDistance);
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+
+		GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, QueryParams);
+
+		// return either the impact point or the trace end
+		return OutHit.bBlockingHit ? OutHit.ImpactPoint : OutHit.TraceEnd;
+	}
 }
 
 void AShooterCharacter::AddWeaponClass(const TSubclassOf<AShooterWeapon>& WeaponClass)
