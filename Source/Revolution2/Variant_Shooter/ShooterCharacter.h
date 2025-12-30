@@ -163,4 +163,11 @@ protected:
 
 	/** Called from the respawn timer to destroy this character and force the PC to respawn */
 	void OnRespawn();
+
+	/** Sync top down aim location to server */
+	UFUNCTION(Server, Reliable)
+	void ServerSetTopDownAimLocation(FVector AimLocation);
+
+	/** Called when top down aim location updates */
+	virtual void OnTopDownAimLocationUpdated(const FVector& AimLocation) override;
 };
