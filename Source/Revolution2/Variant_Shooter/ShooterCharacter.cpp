@@ -169,33 +169,21 @@ FVector AShooterCharacter::GetWeaponTargetLocation()
 	// Check current view mode
 	if (GetCurrentViewMode() == EViewMode::TopDown)
 	{
-		// Top down mode: use mouse position to determine target
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		if (PC)
+		FVector AimLocation;
+		if (GetTopDownAimLocation(AimLocation))
 		{
-			float MouseX, MouseY;
-			if (PC->GetMousePosition(MouseX, MouseY))
+			const FVector CharacterLocation = GetActorLocation();
+			FVector ToAim = AimLocation - CharacterLocation;
+			const float DistanceToAim = ToAim.Size();
+			if (DistanceToAim > MaxAimDistance)
 			{
-				// Deproject screen position to world
-				FVector WorldLocation, WorldDirection;
-				if (PC->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection))
-				{
-					// Perform line trace to find target
-					FHitResult OutHit;
-					FVector Start = WorldLocation;
-					FVector End = Start + (WorldDirection * MaxAimDistance);
-
-					FCollisionQueryParams QueryParams;
-					QueryParams.AddIgnoredActor(this);
-
-					GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, QueryParams);
-
-					// Return either the impact point or the trace end
-					return OutHit.bBlockingHit ? OutHit.ImpactPoint : OutHit.TraceEnd;
-				}
+				ToAim = ToAim.GetSafeNormal() * MaxAimDistance;
+				return CharacterLocation + ToAim;
 			}
+
+			return AimLocation;
 		}
-		
+
 		// Fallback: return position in front of character
 		return GetActorLocation() + (GetActorForwardVector() * MaxAimDistance);
 	}
@@ -214,6 +202,19 @@ FVector AShooterCharacter::GetWeaponTargetLocation()
 
 		// return either the impact point or the trace end
 		return OutHit.bBlockingHit ? OutHit.ImpactPoint : OutHit.TraceEnd;
+	}
+}
+
+void AShooterCharacter::ServerSetTopDownAimLocation_Implementation(FVector AimLocation)
+{
+	SetTopDownAimLocation(AimLocation);
+}
+
+void AShooterCharacter::OnTopDownAimLocationUpdated(const FVector& AimLocation)
+{
+	if (GetLocalRole() != ROLE_Authority)
+	{
+		ServerSetTopDownAimLocation(AimLocation);
 	}
 }
 

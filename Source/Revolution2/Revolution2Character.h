@@ -13,6 +13,9 @@ class UCameraComponent;
 class USpringArmComponent;
 class UInputAction;
 struct FInputActionValue;
+class APlayerController;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FViewModeChangedDelegate, EViewMode, NewViewMode);
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -81,11 +84,31 @@ protected:
 
 	/** Top down camera height */
 	UPROPERTY(EditAnywhere, Category="Camera|TopDown", meta = (ClampMin = 100, ClampMax = 10000, Units = "cm"))
-	float TopDownCameraHeight = 1000.0f;
+	float TopDownCameraHeight = 500.0f;
 
 	/** Top down camera angle (pitch) */
 	UPROPERTY(EditAnywhere, Category="Camera|TopDown", meta = (ClampMin = -90, ClampMax = -10, Units = "Degrees"))
 	float TopDownCameraAngle = -45.0f;
+
+	/** Click move acceptance radius */
+	UPROPERTY(EditAnywhere, Category="Camera|TopDown", meta = (ClampMin = 0, ClampMax = 1000, Units = "cm"))
+	float ClickMoveAcceptanceRadius = 50.0f;
+
+	/** Active view mode changed delegate */
+	UPROPERTY(BlueprintAssignable, Category="Camera")
+	FViewModeChangedDelegate OnViewModeChanged;
+
+	/** Last aim location for top down */
+	FVector TopDownAimLocation = FVector::ZeroVector;
+
+	/** Whether top down aim location is valid */
+	bool bHasTopDownAimLocation = false;
+
+	/** Target location for click move */
+	FVector ClickMoveTargetLocation = FVector::ZeroVector;
+
+	/** Whether click move target is active */
+	bool bHasClickMoveTarget = false;
 	
 public:
 	ARevolution2Character();
@@ -94,6 +117,9 @@ protected:
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+
+	/** Called when actor is constructed (or property changed in editor) */
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 	/** Called every frame */
 	virtual void Tick(float DeltaTime) override;
@@ -129,6 +155,9 @@ protected:
 	/** Get current view mode */
 	EViewMode GetCurrentViewMode() const { return CurrentViewMode; }
 
+	/** Get current top down aim location */
+	bool GetTopDownAimLocation(FVector& OutAimLocation) const;
+
 	/** Handle click move input for top down mode */
 	void OnClickMove(const FInputActionValue& Value);
 
@@ -137,6 +166,33 @@ protected:
 
 	/** Update top down aim direction based on mouse position */
 	void UpdateTopDownAim();
+
+	/** Update click move if a target location is set */
+	void UpdateClickMove();
+
+	/** Apply first person view settings */
+	void ApplyFirstPersonView(APlayerController* PC);
+
+	/** Apply top down view settings */
+	void ApplyTopDownView(APlayerController* PC);
+
+	/** Apply top down camera settings */
+	void ApplyTopDownCameraSettings();
+
+	/** Try to get top down aim location from mouse */
+	bool TryGetTopDownAimLocation(FVector& OutAimLocation) const;
+
+	/** Set top down aim location */
+	void SetTopDownAimLocation(const FVector& AimLocation);
+
+	/** Callback when top down aim location is updated */
+	virtual void OnTopDownAimLocationUpdated(const FVector& AimLocation);
+
+	/** Set mouse input mode */
+	void SetMouseInputMode(APlayerController* PC, bool bEnableMouse);
+
+	/** Set camera active state */
+	void SetCameraActive(UCameraComponent* Camera, bool bActive);
 
 protected:
 
@@ -160,4 +216,3 @@ public:
 	UCameraComponent* GetActiveCameraComponent() const;
 
 };
-
