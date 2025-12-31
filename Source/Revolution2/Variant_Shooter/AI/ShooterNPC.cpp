@@ -23,6 +23,10 @@ void AShooterNPC::BeginPlay()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	Weapon = GetWorld()->SpawnActor<AShooterWeapon>(WeaponClass, GetActorTransform(), SpawnParams);
+	if (Weapon)
+	{
+		Weapon->ActivateWeapon();
+	}
 }
 
 void AShooterNPC::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -62,7 +66,7 @@ void AShooterNPC::AttachWeaponMeshes(AShooterWeapon* WeaponToAttach)
 
 	// attach the weapon meshes
 	WeaponToAttach->GetFirstPersonMesh()->AttachToComponent(GetFirstPersonMesh(), AttachmentRule, FirstPersonWeaponSocket);
-	WeaponToAttach->GetThirdPersonMesh()->AttachToComponent(GetMesh(), AttachmentRule, FirstPersonWeaponSocket);
+	WeaponToAttach->GetThirdPersonMesh()->AttachToComponent(GetMesh(), AttachmentRule, ThirdPersonWeaponSocket);
 }
 
 void AShooterNPC::PlayFiringMontage(UAnimMontage* Montage)
@@ -130,7 +134,9 @@ void AShooterNPC::AddWeaponClass(const TSubclassOf<AShooterWeapon>& InWeaponClas
 
 void AShooterNPC::OnWeaponActivated(AShooterWeapon* InWeapon)
 {
-	// unused
+
+	GetFirstPersonMesh()->SetAnimInstanceClass(InWeapon->GetFirstPersonAnimInstanceClass());
+	GetMesh()->SetAnimInstanceClass(InWeapon->GetThirdPersonAnimInstanceClass());
 }
 
 void AShooterNPC::OnWeaponDeactivated(AShooterWeapon* InWeapon)
