@@ -15,8 +15,6 @@ class UInputAction;
 struct FInputActionValue;
 class APlayerController;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FViewModeChangedDelegate, EViewMode, NewViewMode);
-
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UENUM(BlueprintType)
@@ -25,6 +23,8 @@ enum class EViewMode : uint8
 	FirstPerson,
 	TopDown
 };
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FViewModeChangedDelegate, EViewMode, NewViewMode);
 
 /**
  *  A basic first person character

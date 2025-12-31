@@ -431,12 +431,12 @@ void ARevolution2Character::ApplyTopDownView(APlayerController* PC)
 
 	// Update mesh visibility
 	// Keep FirstPersonMesh accessible but hidden for blueprint access
-	if (FirstPersonMesh)
-	{
-		FirstPersonMesh->SetOnlyOwnerSee(false);
-		FirstPersonMesh->SetVisibility(false);
-		FirstPersonMesh->SetHiddenInGame(true);
-	}
+	// if (FirstPersonMesh)
+	// {
+	// 	FirstPersonMesh->SetOnlyOwnerSee(false);
+	// 	FirstPersonMesh->SetVisibility(false);
+	// 	FirstPersonMesh->SetHiddenInGame(true);
+	// }
 	// In top down mode, make the character mesh visible
 	if (GetMesh())
 	{
